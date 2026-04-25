@@ -6,6 +6,40 @@ import Link from "next/link";
 import * as Sentry from "@sentry/nextjs";
 
 type RecordingMode = "screen" | "camera" | null;
+type RecordingQuality = "low" | "medium" | "high";
+
+const QUALITY_SETTINGS: Record<
+  RecordingQuality,
+  {
+    label: string;
+    width: number;
+    height: number;
+    frameRate: number;
+    videoBitsPerSecond: number;
+  }
+> = {
+  low: {
+    label: "Low (480p)",
+    width: 854,
+    height: 480,
+    frameRate: 20,
+    videoBitsPerSecond: 800_000,
+  },
+  medium: {
+    label: "Medium (720p)",
+    width: 1280,
+    height: 720,
+    frameRate: 24,
+    videoBitsPerSecond: 1_800_000,
+  },
+  high: {
+    label: "High (1080p)",
+    width: 1920,
+    height: 1080,
+    frameRate: 30,
+    videoBitsPerSecond: 3_500_000,
+  },
+};
 
 type RecentRecording = {
   id: string;
@@ -15,6 +49,7 @@ type RecentRecording = {
 export default function RecordPage() {
   const router = useRouter();
   const [mode, setMode] = useState<RecordingMode>(null);
+  const [quality, setQuality] = useState<RecordingQuality>("medium");
   const [isRecording, setIsRecording] = useState(false);
   const [recordedChunks, setRecordedChunks] = useState<Blob[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -48,17 +83,28 @@ export default function RecordPage() {
   const startRecording = async () => {
     try {
       let stream: MediaStream;
+      const qualitySettings = QUALITY_SETTINGS[quality];
 
       if (mode === "screen") {
         // Get screen capture
         stream = await navigator.mediaDevices.getDisplayMedia({
-          video: { cursor: "always" } as MediaTrackConstraintSet,
+          video: {
+            cursor: "always",
+            width: { ideal: qualitySettings.width },
+            height: { ideal: qualitySettings.height },
+            frameRate: { ideal: qualitySettings.frameRate, max: qualitySettings.frameRate },
+          } as MediaTrackConstraintSet,
           audio: false,
         });
       } else if (mode === "camera") {
         // Get camera access
         stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user" },
+          video: {
+            facingMode: "user",
+            width: { ideal: qualitySettings.width },
+            height: { ideal: qualitySettings.height },
+            frameRate: { ideal: qualitySettings.frameRate, max: qualitySettings.frameRate },
+          },
           audio: true,
         });
       } else {
@@ -68,14 +114,28 @@ export default function RecordPage() {
       streamRef.current = stream;
       const chunks: Blob[] = [];
 
+      const preferredMimeTypes = [
+        "video/webm;codecs=vp9,opus",
+        "video/webm;codecs=vp8,opus",
+        "video/webm",
+      ];
+      const selectedMimeType = preferredMimeTypes.find((mime) => MediaRecorder.isTypeSupported(mime));
+
       const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: "video/webm;codecs=vp9",
+        ...(selectedMimeType ? { mimeType: selectedMimeType } : {}),
+        videoBitsPerSecond: qualitySettings.videoBitsPerSecond,
       });
 
       Sentry.addBreadcrumb({
         category: "recording",
         message: `Started ${mode} recording`,
         level: "info",
+        data: {
+          quality,
+          width: qualitySettings.width,
+          height: qualitySettings.height,
+          frameRate: qualitySettings.frameRate,
+        },
       });
 
       mediaRecorder.ondataavailable = (event) => {
@@ -85,7 +145,7 @@ export default function RecordPage() {
       };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: "video/webm" });
+        const blob = new Blob(chunks, { type: mediaRecorder.mimeType || "video/webm" });
         setRecordedChunks([blob]);
 
         // Show preview
@@ -143,31 +203,77 @@ export default function RecordPage() {
     setIsUploading(true);
 
     try {
+      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+      const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+
+      if (!cloudName || !uploadPreset) {
+        throw new Error("Cloudinary client config missing. Set NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME and NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET.");
+      }
+
       const formData = new FormData();
       formData.append("file", recordedChunks[0]);
+      formData.append("upload_preset", uploadPreset);
+      formData.append("folder", "xyro_videos");
 
       Sentry.addBreadcrumb({
         category: "upload",
-        message: `Uploading video - ${(recordedChunks[0].size / 1024 / 1024).toFixed(2)}MB`,
+        message: `Uploading video directly to Cloudinary - ${(recordedChunks[0].size / 1024 / 1024).toFixed(2)}MB`,
         level: "info",
         data: {
           fileSize: recordedChunks[0].size,
           fileType: recordedChunks[0].type,
+          quality,
         },
       });
 
-      const response = await fetch("/api/upload", {
+      const cloudinaryResponse = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/video/upload`, {
         method: "POST",
         body: formData,
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        const message = [error?.error, error?.details].filter(Boolean).join(" - ");
+      const cloudinaryResult = await cloudinaryResponse.json();
+
+      if (!cloudinaryResponse.ok) {
+        const message = [cloudinaryResult?.error?.message, cloudinaryResult?.error].filter(Boolean).join(" - ");
         throw new Error(message || "Upload failed");
       }
 
-      const { videoId } = await response.json();
+      const videoId = cloudinaryResult.public_id as string;
+      const secureUrl = cloudinaryResult.secure_url as string | undefined;
+      const durationSeconds = Number(cloudinaryResult.duration ?? 0) || null;
+      const sizeBytes = Number(cloudinaryResult.bytes ?? 0) || null;
+
+      const metadataResponse = await fetch("/api/recordings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          cloudinaryId: videoId,
+          secureUrl,
+          durationSeconds,
+          sizeBytes,
+        }),
+      });
+
+      if (!metadataResponse.ok) {
+        const metadataError = await metadataResponse.json().catch(() => null);
+        Sentry.captureMessage("Recording uploaded but metadata save failed", {
+          level: "warning",
+          tags: {
+            page: "record",
+            action: "save_metadata",
+          },
+          contexts: {
+            metadata: {
+              videoId,
+              status: metadataResponse.status,
+              details: metadataError,
+            },
+          },
+        });
+      }
+
       const encodedVideoId = encodeURIComponent(videoId);
 
       saveRecentRecording(videoId);
@@ -178,6 +284,8 @@ export default function RecordPage() {
         level: "info",
         data: {
           videoId,
+          sizeBytes,
+          durationSeconds,
         },
       });
 
@@ -238,6 +346,25 @@ export default function RecordPage() {
         <p className="text-gray-600 dark:text-gray-400 mb-8">
           Choose what you want to record and get a shareable link
         </p>
+
+        <div className="mb-6 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
+          <label htmlFor="quality" className="mb-2 block text-sm font-semibold text-gray-900 dark:text-white">
+            Recording Quality
+          </label>
+          <select
+            id="quality"
+            value={quality}
+            disabled={isRecording || recordedChunks.length > 0}
+            onChange={(event) => {
+              setQuality(event.target.value as RecordingQuality);
+            }}
+            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 focus:border-purple-500 focus:outline-none dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
+          >
+            <option value="low">{QUALITY_SETTINGS.low.label} - fastest upload</option>
+            <option value="medium">{QUALITY_SETTINGS.medium.label} - balanced</option>
+            <option value="high">{QUALITY_SETTINGS.high.label} - best quality</option>
+          </select>
+        </div>
 
         {/* Mode Selection or Recording Interface */}
         {!mode ? (
