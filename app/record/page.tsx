@@ -7,6 +7,11 @@ import * as Sentry from "@sentry/nextjs";
 
 type RecordingMode = "screen" | "camera" | null;
 
+type RecentRecording = {
+  id: string;
+  createdAt: string;
+};
+
 export default function RecordPage() {
   const router = useRouter();
   const [mode, setMode] = useState<RecordingMode>(null);
@@ -16,6 +21,28 @@ export default function RecordPage() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const videoPreviewRef = useRef<HTMLVideoElement>(null);
+
+  const saveRecentRecording = (id: string) => {
+    try {
+      const key = "xyro_recent_recordings";
+      const raw = localStorage.getItem(key);
+      const existing: RecentRecording[] = raw ? (JSON.parse(raw) as RecentRecording[]) : [];
+      const updated: RecentRecording[] = [
+        { id, createdAt: new Date().toISOString() },
+        ...existing.filter((item) => item.id !== id),
+      ].slice(0, 20);
+
+      localStorage.setItem(key, JSON.stringify(updated));
+    } catch (error) {
+      Sentry.captureException(error, {
+        level: "warning",
+        tags: {
+          page: "record",
+          action: "save_recent_recording",
+        },
+      });
+    }
+  };
 
   // Start recording based on mode
   const startRecording = async () => {
@@ -136,11 +163,14 @@ export default function RecordPage() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Upload failed");
+        const message = [error?.error, error?.details].filter(Boolean).join(" - ");
+        throw new Error(message || "Upload failed");
       }
 
       const { videoId } = await response.json();
       const encodedVideoId = encodeURIComponent(videoId);
+
+      saveRecentRecording(videoId);
 
       Sentry.addBreadcrumb({
         category: "upload",
@@ -170,7 +200,7 @@ export default function RecordPage() {
         },
       });
 
-      alert("Failed to upload video. Please try again.");
+      alert(error instanceof Error ? error.message : "Failed to upload video. Please try again.");
       setIsUploading(false);
     }
   };

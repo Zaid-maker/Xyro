@@ -4,7 +4,7 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 dark:from-gray-950 dark:to-gray-900 px-4">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-linear-to-br from-purple-50 to-blue-50 dark:from-gray-950 dark:to-gray-900 px-4">
       <main className="flex flex-col items-center gap-12 text-center">
         {/* Logo/Brand */}
         <div className="space-y-2">
@@ -22,12 +22,20 @@ export default function Home() {
             Record your screen or camera, and get an instant shareable link. No sign-up required.
           </p>
 
-          <Link
-            href="/record"
-            className="inline-flex items-center justify-center h-14 px-8 rounded-lg bg-purple-600 text-white font-semibold transition-all hover:bg-purple-700 active:scale-95 shadow-lg hover:shadow-xl"
-          >
-            🎥 Start Recording
-          </Link>
+          <div className="flex flex-col items-center gap-3 sm:flex-row">
+            <Link
+              href="/record"
+              className="inline-flex items-center justify-center h-14 px-8 rounded-lg bg-purple-600 text-white font-semibold transition-all hover:bg-purple-700 active:scale-95 shadow-lg hover:shadow-xl"
+            >
+              🎥 Start Recording
+            </Link>
+            <Link
+              href="/recordings"
+              className="inline-flex items-center justify-center h-14 px-8 rounded-lg border border-gray-300 bg-white text-gray-800 font-semibold transition-all hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:hover:bg-gray-800"
+            >
+              🕘 Recent Recordings
+            </Link>
+          </div>
         </div>
 
         {/* Features */}

@@ -31,6 +31,8 @@ export default function SharePage() {
 
   const shareUrl = typeof window !== "undefined" ? `${window.location.origin}/share/${encodedVideoId}` : "";
   const cloudinaryUrl = `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/video/upload/${videoId}`;
+  const cloudinaryMp4Url = `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/video/upload/f_mp4,q_auto/${videoId}`;
+  const cloudinaryWebmUrl = `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/video/upload/f_webm,q_auto/${videoId}`;
 
   useEffect(() => {
     // Parse the Cloudinary public_id from URL
@@ -90,7 +92,7 @@ export default function SharePage() {
   const downloadVideo = () => {
     try {
       const a = document.createElement("a");
-      a.href = `${cloudinaryUrl}.mp4`;
+      a.href = cloudinaryMp4Url;
       a.download = `xyro_${videoId}.mp4`;
       document.body.appendChild(a);
       a.click();
@@ -173,8 +175,8 @@ export default function SharePage() {
               className="w-full bg-black"
               preload="metadata"
             >
-              <source src={`${cloudinaryUrl}.mp4`} type="video/mp4" />
-              <source src={`${cloudinaryUrl}.webm`} type="video/webm" />
+              <source src={cloudinaryMp4Url} type="video/mp4" />
+              <source src={cloudinaryWebmUrl} type="video/webm" />
               Your browser does not support this video format.
             </video>
           </div>

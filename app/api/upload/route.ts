@@ -1,6 +1,7 @@
 import { v2 as cloudinary } from "cloudinary";
 import { NextRequest, NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
+import { prisma } from "@/lib/prisma";
 
 cloudinary.config({
   cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
@@ -50,13 +51,8 @@ export async function POST(request: NextRequest) {
         {
           resource_type: "video",
           folder: "xyro_videos",
-          format: "mp4", // Convert to mp4 for better compatibility
-          quality: "auto:best",
-          fetch_format: "auto",
-          eager: [
-            { format: "mp4", quality: "auto:best" },
-            { format: "webm", quality: "auto:best" },
-          ],
+          // Keep upload fast; transforms are applied on delivery in the player.
+          timeout: 120000,
         },
         (error, result) => {
           if (error) reject(error);
@@ -96,15 +92,50 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    const encodedVideoId = encodeURIComponent(uploadResult.public_id);
+    const sharePath = `/share/${encodedVideoId}`;
+
+    await prisma.recording.upsert({
+      where: {
+        cloudinaryId: uploadResult.public_id,
+      },
+      update: {
+        sharePath,
+        secureUrl: uploadResult.secure_url,
+        durationSeconds: uploadResult.duration,
+        sizeBytes: uploadResult.bytes,
+      },
+      create: {
+        cloudinaryId: uploadResult.public_id,
+        sharePath,
+        secureUrl: uploadResult.secure_url,
+        durationSeconds: uploadResult.duration,
+        sizeBytes: uploadResult.bytes,
+      },
+    });
+
     return NextResponse.json({
       success: true,
       videoId: uploadResult.public_id,
+      sharePath,
       url: uploadResult.secure_url,
+      secureUrl: uploadResult.secure_url,
       duration: uploadResult.duration,
+      durationSeconds: uploadResult.duration,
       size: uploadResult.bytes,
+      sizeBytes: uploadResult.bytes,
     });
   } catch (error) {
     console.error("Upload error:", error);
+
+    const errorObj = error as { message?: string; http_code?: number; name?: string };
+    const isTimeout =
+      errorObj?.name === "TimeoutError" ||
+      errorObj?.http_code === 499 ||
+      (errorObj?.message ?? "").toLowerCase().includes("timeout");
+    const userMessage = isTimeout
+      ? "Upload timed out. Try a shorter recording or try again."
+      : "Upload failed";
     
     // Capture error with context
     Sentry.captureException(error, {
@@ -122,7 +153,7 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(
-      { error: "Upload failed", details: String(error) },
+      { error: userMessage, details: errorObj?.message ?? String(error) },
       { status: 500 }
     );
   }
