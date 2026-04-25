@@ -54,8 +54,8 @@ export async function POST(request: NextRequest) {
           quality: "auto:best",
           fetch_format: "auto",
           eager: [
-            { format: "mp4", quality: "q_auto:best" },
-            { format: "webm", quality: "q_auto:best" },
+            { format: "mp4", quality: "auto:best" },
+            { format: "webm", quality: "auto:best" },
           ],
         },
         (error, result) => {

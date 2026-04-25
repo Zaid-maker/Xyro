@@ -3,9 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { CldVideoPlayer } from "next-cloudinary";
 import * as Sentry from "@sentry/nextjs";
-import "next-cloudinary/dist/cld-video-player.css";
 
 interface VideoData {
   id: string;
@@ -17,13 +15,21 @@ interface VideoData {
 
 export default function SharePage() {
   const params = useParams();
-  const videoId = params.id as string;
+  const rawVideoId = params.id as string;
+  const videoId = (() => {
+    try {
+      return decodeURIComponent(rawVideoId);
+    } catch {
+      return rawVideoId;
+    }
+  })();
+  const encodedVideoId = encodeURIComponent(videoId);
   const [videoData, setVideoData] = useState<VideoData | null>(null);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const shareUrl = typeof window !== "undefined" ? `${window.location.origin}/share/${videoId}` : "";
+  const shareUrl = typeof window !== "undefined" ? `${window.location.origin}/share/${encodedVideoId}` : "";
   const cloudinaryUrl = `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/video/upload/${videoId}`;
 
   useEffect(() => {
@@ -161,12 +167,16 @@ export default function SharePage() {
         {/* Video Preview */}
         {videoData && (
           <div className="rounded-lg overflow-hidden shadow-lg mb-8 bg-white dark:bg-gray-900">
-            <CldVideoPlayer
-              width={800}
-              height={450}
-              src={videoData.url}
+            <video
               controls
-            />
+              playsInline
+              className="w-full bg-black"
+              preload="metadata"
+            >
+              <source src={`${cloudinaryUrl}.mp4`} type="video/mp4" />
+              <source src={`${cloudinaryUrl}.webm`} type="video/webm" />
+              Your browser does not support this video format.
+            </video>
           </div>
         )}
 

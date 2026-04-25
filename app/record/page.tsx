@@ -140,6 +140,7 @@ export default function RecordPage() {
       }
 
       const { videoId } = await response.json();
+      const encodedVideoId = encodeURIComponent(videoId);
 
       Sentry.addBreadcrumb({
         category: "upload",
@@ -150,8 +151,8 @@ export default function RecordPage() {
         },
       });
 
-      // Navigate to share page with video ID
-      router.push(`/share/${videoId}`);
+      // Navigate to share page with URL-safe ID
+      router.push(`/share/${encodedVideoId}`);
     } catch (error) {
       console.error("Error uploading video:", error);
 
