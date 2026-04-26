@@ -8,6 +8,16 @@ import * as Sentry from "@sentry/nextjs";
 type RecordingMode = "screen" | "camera" | null;
 type RecordingQuality = "low" | "medium" | "high";
 
+type CloudinaryUploadResult = {
+  public_id: string;
+  secure_url?: string;
+  duration?: number;
+  bytes?: number;
+};
+
+const CHUNKED_UPLOAD_THRESHOLD_BYTES = 25 * 1024 * 1024;
+const CHUNK_SIZE_BYTES = 5 * 1024 * 1024;
+
 const QUALITY_SETTINGS: Record<
   RecordingQuality,
   {
@@ -53,6 +63,7 @@ export default function RecordPage() {
   const [isRecording, setIsRecording] = useState(false);
   const [recordedChunks, setRecordedChunks] = useState<Blob[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const videoPreviewRef = useRef<HTMLVideoElement>(null);
@@ -164,7 +175,7 @@ export default function RecordPage() {
         });
       };
 
-      mediaRecorder.start();
+      mediaRecorder.start(1000);
       mediaRecorderRef.current = mediaRecorder;
       setIsRecording(true);
     } catch (error) {
@@ -201,6 +212,7 @@ export default function RecordPage() {
     if (recordedChunks.length === 0) return;
 
     setIsUploading(true);
+    setUploadProgress(0);
 
     try {
       const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
@@ -209,11 +221,6 @@ export default function RecordPage() {
       if (!cloudName || !uploadPreset) {
         throw new Error("Cloudinary client config missing. Set NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME and NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET.");
       }
-
-      const formData = new FormData();
-      formData.append("file", recordedChunks[0]);
-      formData.append("upload_preset", uploadPreset);
-      formData.append("folder", "xyro_videos");
 
       Sentry.addBreadcrumb({
         category: "upload",
@@ -226,20 +233,15 @@ export default function RecordPage() {
         },
       });
 
-      const cloudinaryResponse = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/video/upload`, {
-        method: "POST",
-        body: formData,
+      const cloudinaryResult = await uploadToCloudinary({
+        blob: recordedChunks[0],
+        cloudName,
+        uploadPreset,
+        onProgress: setUploadProgress,
       });
 
-      const cloudinaryResult = await cloudinaryResponse.json();
-
-      if (!cloudinaryResponse.ok) {
-        const message = [cloudinaryResult?.error?.message, cloudinaryResult?.error].filter(Boolean).join(" - ");
-        throw new Error(message || "Upload failed");
-      }
-
-      const videoId = cloudinaryResult.public_id as string;
-      const secureUrl = cloudinaryResult.secure_url as string | undefined;
+      const videoId = cloudinaryResult.public_id;
+      const secureUrl = cloudinaryResult.secure_url;
       const durationSeconds = Number(cloudinaryResult.duration ?? 0) || null;
       const sizeBytes = Number(cloudinaryResult.bytes ?? 0) || null;
 
@@ -310,6 +312,7 @@ export default function RecordPage() {
 
       alert(error instanceof Error ? error.message : "Failed to upload video. Please try again.");
       setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -477,10 +480,118 @@ export default function RecordPage() {
                   Try Again
                 </button>
               </div>
+
+              {isUploading && (
+                <div className="mt-4">
+                  <div className="mb-1 flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
+                    <span>Upload progress</span>
+                    <span>{Math.round(uploadProgress)}%</span>
+                  </div>
+                  <div className="h-2 w-full rounded-full bg-gray-200 dark:bg-gray-800">
+                    <div
+                      className="h-2 rounded-full bg-green-600 transition-all"
+                      style={{ width: `${Math.min(100, Math.max(0, uploadProgress))}%` }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
       </div>
     </div>
   );
+}
+
+async function uploadToCloudinary({
+  blob,
+  cloudName,
+  uploadPreset,
+  onProgress,
+}: {
+  blob: Blob;
+  cloudName: string;
+  uploadPreset: string;
+  onProgress: (value: number) => void;
+}): Promise<CloudinaryUploadResult> {
+  if (blob.size <= CHUNKED_UPLOAD_THRESHOLD_BYTES) {
+    const formData = new FormData();
+    formData.append("file", blob);
+    formData.append("upload_preset", uploadPreset);
+    formData.append("folder", "xyro_videos");
+
+    const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/video/upload`, {
+      method: "POST",
+      body: formData,
+    });
+
+    const result = (await response.json()) as
+      | CloudinaryUploadResult
+      | { error?: { message?: string } | string };
+
+    if (!response.ok) {
+      throw new Error(formatCloudinaryError(result));
+    }
+
+    onProgress(100);
+    return result as CloudinaryUploadResult;
+  }
+
+  const uploadId = `xyro-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  let offset = 0;
+  let finalResult: CloudinaryUploadResult | null = null;
+
+  while (offset < blob.size) {
+    const nextOffset = Math.min(offset + CHUNK_SIZE_BYTES, blob.size);
+    const chunk = blob.slice(offset, nextOffset);
+    const formData = new FormData();
+    formData.append("file", chunk);
+    formData.append("upload_preset", uploadPreset);
+    formData.append("folder", "xyro_videos");
+
+    const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/video/upload`, {
+      method: "POST",
+      headers: {
+        "X-Unique-Upload-Id": uploadId,
+        "Content-Range": `bytes ${offset}-${nextOffset - 1}/${blob.size}`,
+      },
+      body: formData,
+    });
+
+    const result = (await response.json()) as
+      | CloudinaryUploadResult
+      | { error?: { message?: string } | string };
+
+    if (!response.ok) {
+      throw new Error(formatCloudinaryError(result));
+    }
+
+    finalResult = result as CloudinaryUploadResult;
+    offset = nextOffset;
+    onProgress((offset / blob.size) * 100);
+  }
+
+  if (!finalResult?.public_id) {
+    throw new Error("Upload finished but Cloudinary did not return a public_id.");
+  }
+
+  return finalResult;
+}
+
+function formatCloudinaryError(
+  result: CloudinaryUploadResult | { error?: { message?: string } | string },
+) {
+  if ("error" in result && typeof result.error === "string") {
+    return result.error;
+  }
+
+  if ("error" in result) {
+    if (typeof result.error === "object" && result.error && "message" in result.error) {
+      return result.error.message || "Upload failed";
+    }
+
+    return "Upload failed";
+  }
+
+  return "Upload failed";
 }
