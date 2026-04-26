@@ -10,6 +10,7 @@ model Recording {
   id              String   @id @default(cuid())
   cloudinaryId    String   @unique
   sharePath       String
+  quality         String?
   secureUrl       String?
   durationSeconds Float?
   sizeBytes       Int?

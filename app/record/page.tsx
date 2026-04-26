@@ -253,6 +253,7 @@ export default function RecordPage() {
         },
         body: JSON.stringify({
           cloudinaryId: videoId,
+          quality,
           secureUrl,
           durationSeconds,
           sizeBytes,

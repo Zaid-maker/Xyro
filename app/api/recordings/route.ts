@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 
 type CreateRecordingBody = {
   cloudinaryId: string;
+  quality?: string;
   secureUrl?: string;
   durationSeconds?: number;
   sizeBytes?: number;
@@ -20,6 +21,7 @@ export async function GET() {
         cloudinaryId: true,
         sharePath: true,
         secureUrl: true,
+        quality: true,
         durationSeconds: true,
         sizeBytes: true,
         createdAt: true,
@@ -73,6 +75,7 @@ export async function POST(request: NextRequest) {
       },
       update: {
         sharePath,
+        quality: body.quality ?? null,
         secureUrl: body.secureUrl ?? null,
         durationSeconds: body.durationSeconds ?? null,
         sizeBytes: body.sizeBytes ?? null,
@@ -80,6 +83,7 @@ export async function POST(request: NextRequest) {
       create: {
         cloudinaryId,
         sharePath,
+        quality: body.quality ?? null,
         secureUrl: body.secureUrl ?? null,
         durationSeconds: body.durationSeconds ?? null,
         sizeBytes: body.sizeBytes ?? null,
@@ -87,6 +91,7 @@ export async function POST(request: NextRequest) {
       select: {
         cloudinaryId: true,
         sharePath: true,
+        quality: true,
         secureUrl: true,
         durationSeconds: true,
         sizeBytes: true,

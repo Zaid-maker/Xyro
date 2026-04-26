@@ -7,6 +7,7 @@ import * as Sentry from "@sentry/nextjs";
 type RecordingItem = {
   cloudinaryId: string;
   sharePath: string;
+  quality: string | null;
   secureUrl: string | null;
   durationSeconds: number | null;
   sizeBytes: number | null;
@@ -23,6 +24,7 @@ type RecordingsApiResponse = {
   recordings?: Array<{
     cloudinaryId: string;
     sharePath: string;
+      quality: string | null;
     secureUrl: string | null;
     durationSeconds: number | null;
     sizeBytes: number | null;
@@ -31,6 +33,12 @@ type RecordingsApiResponse = {
 };
 
 const STORAGE_KEY = "xyro_recent_recordings";
+
+const QUALITY_LABELS: Record<string, string> = {
+  low: "Low (480p)",
+  medium: "Medium (720p)",
+  high: "High (1080p)",
+};
 
 export default function RecentRecordingsPage() {
   const [recordings, setRecordings] = useState<RecordingItem[]>([]);
@@ -64,6 +72,7 @@ export default function RecentRecordingsPage() {
         const fallbackRecordings: RecordingItem[] = parsed.map((item) => ({
           cloudinaryId: item.id,
           sharePath: `/share/${encodeURIComponent(item.id)}`,
+          quality: null,
           secureUrl: null,
           durationSeconds: null,
           sizeBytes: null,
@@ -285,6 +294,9 @@ export default function RecentRecordingsPage() {
                       <div className="mt-2 flex flex-wrap gap-3 text-xs text-gray-500 dark:text-gray-400">
                         {formatDuration(recording.durationSeconds) && (
                           <span>Duration: {formatDuration(recording.durationSeconds)}</span>
+                        )}
+                        {recording.quality && (
+                          <span>Quality: {QUALITY_LABELS[recording.quality] ?? recording.quality}</span>
                         )}
                         {formatBytes(recording.sizeBytes) && (
                           <span>Size: {formatBytes(recording.sizeBytes)}</span>
