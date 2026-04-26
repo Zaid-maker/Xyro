@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowLeft, CheckCircle2, Copy, Download, Video, XCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -131,8 +132,9 @@ export default function SharePage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-950 px-4">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-            ❌ {error}
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4 inline-flex items-center justify-center gap-2">
+            <XCircle className="h-6 w-6 text-red-600 dark:text-red-400" aria-hidden="true" />
+            {error}
           </h1>
           <Link
             href="/"
@@ -153,13 +155,15 @@ export default function SharePage() {
           href="/"
           className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-8"
         >
-          ← Back to Home
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          Back to Home
         </Link>
 
         {/* Success Message */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">
-            ✅ Recording Complete!
+          <h1 className="text-3xl font-bold text-green-600 dark:text-green-400 mb-2 inline-flex items-center justify-center gap-2">
+            <CheckCircle2 className="h-8 w-8" aria-hidden="true" />
+            Recording Complete!
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
             Your video is ready to share
@@ -204,7 +208,17 @@ export default function SharePage() {
                   : "bg-purple-600 text-white hover:bg-purple-700"
               }`}
             >
-              {copied ? "✓ Copied" : "📋 Copy"}
+              {copied ? (
+                <>
+                  <CheckCircle2 className="mr-2 inline-block h-4 w-4" aria-hidden="true" />
+                  Copied
+                </>
+              ) : (
+                <>
+                  <Copy className="mr-2 inline-block h-4 w-4" aria-hidden="true" />
+                  Copy
+                </>
+              )}
             </button>
           </div>
 
@@ -226,13 +240,15 @@ export default function SharePage() {
             onClick={downloadVideo}
             className="flex-1 h-12 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors"
           >
-            ⬇️ Download Video
+            <Download className="mr-2 inline-block h-4 w-4" aria-hidden="true" />
+            Download Video
           </button>
           <Link
             href="/record"
             className="flex-1 h-12 rounded-lg bg-purple-600 text-white font-semibold hover:bg-purple-700 transition-colors flex items-center justify-center"
           >
-            🎥 Record Another
+            <Video className="mr-2 h-4 w-4" aria-hidden="true" />
+            Record Another
           </Link>
         </div>
       </div>

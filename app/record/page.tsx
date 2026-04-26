@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowLeft, Camera, Circle, Link2, Monitor, Square, Upload } from "lucide-react";
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -339,7 +340,8 @@ export default function RecordPage() {
           href="/"
           className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-8"
         >
-          ← Back
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          Back
         </Link>
 
         {/* Title */}
@@ -377,7 +379,7 @@ export default function RecordPage() {
               onClick={() => setMode("screen")}
               className="p-8 rounded-lg border-2 border-gray-200 dark:border-gray-800 hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-gray-900 transition-all text-left"
             >
-              <div className="text-4xl mb-4">🖥️</div>
+              <Monitor className="mb-4 h-10 w-10 text-purple-600 dark:text-purple-400" aria-hidden="true" />
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                 Record Screen
               </h2>
@@ -391,7 +393,7 @@ export default function RecordPage() {
               onClick={() => setMode("camera")}
               className="p-8 rounded-lg border-2 border-gray-200 dark:border-gray-800 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-gray-900 transition-all text-left"
             >
-              <div className="text-4xl mb-4">📹</div>
+              <Camera className="mb-4 h-10 w-10 text-blue-600 dark:text-blue-400" aria-hidden="true" />
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                 Record Camera
               </h2>
@@ -425,7 +427,8 @@ export default function RecordPage() {
                       onClick={stopRecording}
                       className="flex-1 h-12 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors"
                     >
-                      ⏹ Stop Recording
+                      <Square className="mr-2 inline-block h-4 w-4 fill-current" aria-hidden="true" />
+                      Stop Recording
                     </button>
                     <div className="flex items-center gap-2 px-4 rounded-lg bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200 font-semibold">
                       <span className="inline-block w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
@@ -438,7 +441,8 @@ export default function RecordPage() {
                       onClick={startRecording}
                       className="flex-1 h-12 rounded-lg bg-purple-600 text-white font-semibold hover:bg-purple-700 transition-colors"
                     >
-                      ⏺ Start Recording
+                      <Circle className="mr-2 inline-block h-4 w-4 fill-current" aria-hidden="true" />
+                      Start Recording
                     </button>
                     <button
                       onClick={() => setMode(null)}
@@ -470,7 +474,17 @@ export default function RecordPage() {
                   disabled={isUploading}
                   className="flex-1 h-12 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isUploading ? "⏳ Uploading..." : "🔗 Generate Link"}
+                  {isUploading ? (
+                    <>
+                      <Upload className="mr-2 inline-block h-4 w-4 animate-pulse" aria-hidden="true" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Link2 className="mr-2 inline-block h-4 w-4" aria-hidden="true" />
+                      Generate Link
+                    </>
+                  )}
                 </button>
                 <button
                   onClick={resetRecording}
