@@ -1,6 +1,26 @@
 "use client";
 
-import { ArrowLeft, Camera, Circle, Link2, Monitor, Square, Upload } from "lucide-react";
+import {
+  Archive,
+  ArrowLeft,
+  BarChart3,
+  Bell,
+  Camera,
+  Circle,
+  Folder,
+  HelpCircle,
+  LayoutGrid,
+  LifeBuoy,
+  Link2,
+  Menu,
+  Monitor,
+  Plus,
+  Square,
+  Upload,
+  Users,
+  Video,
+  X,
+} from "lucide-react";
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -65,6 +85,7 @@ export default function RecordPage() {
   const [recordedChunks, setRecordedChunks] = useState<Blob[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const videoPreviewRef = useRef<HTMLVideoElement>(null);
@@ -334,186 +355,315 @@ export default function RecordPage() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-950 px-4 py-8">
-      <div className="w-full max-w-2xl">
-        {/* Back button */}
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-8"
-        >
-          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          Back
-        </Link>
-
-        {/* Title */}
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Record Your Screen
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 mb-8">
-          Choose what you want to record and get a shareable link
-        </p>
-
-        <div className="mb-6 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
-          <label htmlFor="quality" className="mb-2 block text-sm font-semibold text-gray-900 dark:text-white">
-            Recording Quality
-          </label>
-          <select
-            id="quality"
-            value={quality}
-            disabled={isRecording || recordedChunks.length > 0}
-            onChange={(event) => {
-              setQuality(event.target.value as RecordingQuality);
-            }}
-            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 focus:border-purple-500 focus:outline-none dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100"
-          >
-            <option value="low">{QUALITY_SETTINGS.low.label} - fastest upload</option>
-            <option value="medium">{QUALITY_SETTINGS.medium.label} - balanced</option>
-            <option value="high">{QUALITY_SETTINGS.high.label} - best quality</option>
-          </select>
+    <div className="min-h-screen overflow-hidden bg-[#131313] text-on-surface">
+      <nav className="fixed top-0 z-50 flex h-16 w-full items-center justify-between border-b border-white/10 bg-[#050505]/80 px-6 font-['Space_Grotesk'] tracking-tight backdrop-blur-xl">
+        <div className="flex items-center gap-8">
+          <span className="text-2xl font-bold tracking-tighter text-cyan-400">Xyro</span>
+          <div className="hidden gap-6 md:flex">
+            <Link className="text-zinc-400 transition-colors hover:text-zinc-100" href="#">
+              Dashboard
+            </Link>
+            <Link className="text-zinc-400 transition-colors hover:text-zinc-100" href="#">
+              Library
+            </Link>
+            <Link className="text-zinc-400 transition-colors hover:text-zinc-100" href="#">
+              Settings
+            </Link>
+          </div>
         </div>
 
-        {/* Mode Selection or Recording Interface */}
-        {!mode ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Screen Recording Option */}
-            <button
-              onClick={() => setMode("screen")}
-              className="p-8 rounded-lg border-2 border-gray-200 dark:border-gray-800 hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-gray-900 transition-all text-left"
-            >
-              <Monitor className="mb-4 h-10 w-10 text-purple-600 dark:text-purple-400" aria-hidden="true" />
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                Record Screen
-              </h2>
-              <p className="text-gray-600 dark:text-gray-400 mt-2">
-                Capture your entire screen or a specific window
-              </p>
-            </button>
+        <div className="flex items-center gap-3">
+          <button className="rounded-lg p-2 text-zinc-400 transition-all hover:bg-white/5 hover:text-zinc-100 active:scale-95">
+            <Bell className="h-5 w-5" aria-hidden="true" />
+          </button>
+          <button className="rounded-lg p-2 text-zinc-400 transition-all hover:bg-white/5 hover:text-zinc-100 active:scale-95">
+            <HelpCircle className="h-5 w-5" aria-hidden="true" />
+          </button>
+          <div className="ml-1 h-8 w-8 rounded-full border border-white/10 bg-linear-to-br from-cyan-400 to-purple-500" />
+          <button
+            onClick={() => setMobileMenuOpen((value) => !value)}
+            className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-white/5 hover:text-zinc-100 md:hidden"
+            aria-label="Toggle navigation"
+          >
+            {mobileMenuOpen ? <X className="h-5 w-5" aria-hidden="true" /> : <Menu className="h-5 w-5" aria-hidden="true" />}
+          </button>
+        </div>
+      </nav>
 
-            {/* Camera Recording Option */}
-            <button
-              onClick={() => setMode("camera")}
-              className="p-8 rounded-lg border-2 border-gray-200 dark:border-gray-800 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-gray-900 transition-all text-left"
-            >
-              <Camera className="mb-4 h-10 w-10 text-blue-600 dark:text-blue-400" aria-hidden="true" />
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                Record Camera
-              </h2>
-              <p className="text-gray-600 dark:text-gray-400 mt-2">
-                Capture video from your webcam with audio
-              </p>
-            </button>
-          </div>
-        ) : recordedChunks.length === 0 ? (
-          // Recording in progress or ready to record
-          <div className="space-y-6">
-            <div className="p-8 rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Mode: <span className="font-semibold">{mode === "screen" ? "Screen" : "Camera"}</span>
-              </p>
-
-              {mode === "camera" && (
-                <video
-                  ref={videoPreviewRef}
-                  autoPlay
-                  muted
-                  playsInline
-                  className="w-full rounded-lg bg-black mb-6 max-h-96 object-cover"
-                />
-              )}
-
-              <div className="flex gap-4">
-                {isRecording ? (
-                  <>
-                    <button
-                      onClick={stopRecording}
-                      className="flex-1 h-12 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors"
-                    >
-                      <Square className="mr-2 inline-block h-4 w-4 fill-current" aria-hidden="true" />
-                      Stop Recording
-                    </button>
-                    <div className="flex items-center gap-2 px-4 rounded-lg bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200 font-semibold">
-                      <span className="inline-block w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
-                      Recording...
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      onClick={startRecording}
-                      className="flex-1 h-12 rounded-lg bg-purple-600 text-white font-semibold hover:bg-purple-700 transition-colors"
-                    >
-                      <Circle className="mr-2 inline-block h-4 w-4 fill-current" aria-hidden="true" />
-                      Start Recording
-                    </button>
-                    <button
-                      onClick={() => setMode(null)}
-                      className="px-6 h-12 rounded-lg bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white font-semibold hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors"
-                    >
-                      Change Mode
-                    </button>
-                  </>
-                )}
-              </div>
+      <aside className="fixed left-0 top-16 bottom-0 hidden w-64 flex-col border-r border-white/10 bg-[#050505] py-4 font-['Space_Grotesk'] text-sm md:flex">
+        <div className="mb-8 px-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded bg-primary-container text-sm font-bold text-on-primary">X</div>
+            <div>
+              <div className="font-bold text-zinc-100">Xyro Studio</div>
+              <div className="text-[10px] uppercase tracking-widest text-zinc-500">Pro Plan</div>
             </div>
           </div>
-        ) : (
-          // Preview and generate link
-          <div className="space-y-6">
-            <div className="p-8 rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Preview
-              </h2>
-              <video
-                ref={videoPreviewRef}
-                controls
-                className="w-full rounded-lg bg-black mb-6 max-h-96 object-cover"
-              />
+        </div>
 
-              <div className="flex gap-4">
-                <button
-                  onClick={generateLink}
-                  disabled={isUploading}
-                  className="flex-1 h-12 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        <button className="mx-4 mb-8 flex items-center justify-center gap-2 rounded-lg bg-primary-container py-3 font-bold text-on-primary-container transition-all hover:brightness-110 active:scale-[0.98]">
+          <Plus className="h-4 w-4" aria-hidden="true" />
+          New Recording
+        </button>
+
+        <div className="flex flex-col gap-1 px-2">
+          <a className="flex items-center gap-3 rounded-lg border-r-2 border-cyan-400 bg-cyan-400/5 px-4 py-3 font-bold text-cyan-400 transition-all duration-200 ease-in-out" href="#">
+            <Video className="h-4 w-4" aria-hidden="true" />
+            Record
+          </a>
+          <a className="flex items-center gap-3 rounded-lg px-4 py-3 text-zinc-500 transition-all duration-200 ease-in-out hover:bg-white/5 hover:text-zinc-200" href="#">
+            <Folder className="h-4 w-4" aria-hidden="true" />
+            My Videos
+          </a>
+          <a className="flex items-center gap-3 rounded-lg px-4 py-3 text-zinc-500 transition-all duration-200 ease-in-out hover:bg-white/5 hover:text-zinc-200" href="#">
+            <Users className="h-4 w-4" aria-hidden="true" />
+            Team
+          </a>
+          <a className="flex items-center gap-3 rounded-lg px-4 py-3 text-zinc-500 transition-all duration-200 ease-in-out hover:bg-white/5 hover:text-zinc-200" href="#">
+            <BarChart3 className="h-4 w-4" aria-hidden="true" />
+            Analytics
+          </a>
+        </div>
+
+        <div className="mt-auto flex flex-col gap-1 border-t border-white/5 px-2 pt-4">
+          <a className="flex items-center gap-3 rounded-lg px-4 py-2 text-zinc-500 transition-all hover:bg-white/5 hover:text-zinc-200" href="#">
+            <Archive className="h-4 w-4" aria-hidden="true" />
+            Archive
+          </a>
+          <a className="flex items-center gap-3 rounded-lg px-4 py-2 text-zinc-500 transition-all hover:bg-white/5 hover:text-zinc-200" href="#">
+            <LifeBuoy className="h-4 w-4" aria-hidden="true" />
+            Support
+          </a>
+        </div>
+      </aside>
+
+      {mobileMenuOpen && (
+        <div className="fixed left-0 right-0 top-16 z-40 border-b border-white/10 bg-[#050505]/95 px-6 py-4 backdrop-blur-xl md:hidden">
+          <div className="flex flex-col gap-3 text-sm text-zinc-300">
+            <Link href="#">Dashboard</Link>
+            <Link href="#">Library</Link>
+            <Link href="#">Settings</Link>
+          </div>
+        </div>
+      )}
+
+      <main className="relative min-h-screen pt-16 md:ml-64">
+        <div className="pointer-events-none absolute right-0 top-0 -mr-64 -mt-64 h-125 w-125 rounded-full bg-primary-container/5 blur-[120px]" />
+        <div className="pointer-events-none absolute bottom-0 left-0 -mb-32 -ml-32 h-100 w-100 rounded-full bg-secondary-container/5 blur-[100px]" />
+
+        <div className="mx-auto max-w-5xl px-4 py-8 md:px-8 md:py-xl">
+          <div className="mb-lg">
+            <Link className="mb-base inline-flex items-center gap-2 text-zinc-500 transition-colors hover:text-primary group" href="/">
+              <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" aria-hidden="true" />
+              <span className="text-[12px] font-semibold uppercase tracking-[0.08em]">Back to Dashboard</span>
+            </Link>
+            <h1 className="mb-xs font-['Space_Grotesk'] text-[48px] font-bold leading-[1.1] tracking-[-0.02em] text-on-surface">
+              Record Your Screen
+            </h1>
+            <p className="max-w-2xl text-[18px] leading-[1.6] text-zinc-400">
+              Choose what you want to record and get a shareable link instantly.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-12 gap-gutter">
+            <div className="glass-panel col-span-12 flex flex-col justify-center rounded-xl p-md lg:col-span-4">
+              <label htmlFor="quality" className="mb-sm block text-[12px] font-semibold uppercase tracking-[0.08em] text-zinc-500">
+                Recording Quality
+              </label>
+              <div className="relative group">
+                <select
+                  id="quality"
+                  value={quality}
+                  disabled={isRecording || recordedChunks.length > 0}
+                  onChange={(event) => setQuality(event.target.value as RecordingQuality)}
+                  className="w-full cursor-pointer appearance-none border-b border-white/10 bg-surface-container-low px-4 py-3 font-['Inter'] text-[16px] text-on-surface transition-all focus:border-primary-container focus:ring-0"
                 >
-                  {isUploading ? (
-                    <>
-                      <Upload className="mr-2 inline-block h-4 w-4 animate-pulse" aria-hidden="true" />
-                      Uploading...
-                    </>
-                  ) : (
-                    <>
-                      <Link2 className="mr-2 inline-block h-4 w-4" aria-hidden="true" />
-                      Generate Link
-                    </>
-                  )}
-                </button>
-                <button
-                  onClick={resetRecording}
-                  disabled={isUploading}
-                  className="px-6 h-12 rounded-lg bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white font-semibold hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Try Again
+                  <option value="high">High (1080p) - sharpest</option>
+                  <option value="medium">Medium (720p) - balanced</option>
+                  <option value="low">Standard (480p) - fastest</option>
+                </select>
+                <span className="pointer-events-none absolute right-3 top-3 text-zinc-500">▾</span>
+              </div>
+              <p className="mt-base flex items-center gap-1 text-[11px] text-zinc-500">
+                <span>ℹ</span>
+                Auto-detected based on connection
+              </p>
+            </div>
+
+            <div className="col-span-12 grid grid-cols-1 gap-gutter md:grid-cols-2 lg:col-span-8">
+              <button onClick={() => setMode("screen")} className="recording-card glass-panel flex flex-col items-center rounded-xl p-lg text-center transition-all hover:border-cyan-400/80">
+                <div className="mb-md flex h-16 w-16 items-center justify-center rounded-full bg-primary-container/10 transition-transform group-hover:scale-110">
+                  <Monitor className="text-4xl text-primary-container" aria-hidden="true" />
+                </div>
+                <h3 className="mb-xs text-[24px] font-medium leading-[1.3] text-zinc-100">Record Screen</h3>
+                <p className="text-[14px] leading-normal text-zinc-400">Capture your entire screen or a specific window.</p>
+              </button>
+
+              <button onClick={() => setMode("camera")} className="recording-card glass-panel flex flex-col items-center rounded-xl p-lg text-center transition-all hover:border-cyan-400/80">
+                <div className="mb-md flex h-16 w-16 items-center justify-center rounded-full bg-primary-container/10 transition-transform group-hover:scale-110">
+                  <Camera className="text-4xl text-primary-container" aria-hidden="true" />
+                </div>
+                <h3 className="mb-xs text-[24px] font-medium leading-[1.3] text-zinc-100">Record Camera</h3>
+                <p className="text-[14px] leading-normal text-zinc-400">Capture video from your webcam with audio.</p>
+              </button>
+            </div>
+
+            <div className="col-span-12 mt-lg">
+              <div className="mb-md flex items-end justify-between">
+                <h2 className="text-[24px] font-medium leading-[1.3] text-on-surface">Recent Sessions</h2>
+                <button className="text-[12px] font-semibold uppercase tracking-[0.08em] text-primary-container hover:underline">
+                  View All
                 </button>
               </div>
 
-              {isUploading && (
-                <div className="mt-4">
-                  <div className="mb-1 flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
-                    <span>Upload progress</span>
-                    <span>{Math.round(uploadProgress)}%</span>
+              <div className="grid grid-cols-1 gap-gutter md:grid-cols-3">
+                <div className="glass-panel group cursor-pointer overflow-hidden rounded-xl">
+                  <div className="relative aspect-video overflow-hidden bg-surface-container-high">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#6d3a84_0%,#2a2a2a_45%,#181818_100%)] opacity-90" />
+                    <div className="absolute inset-x-0 top-0 h-10 bg-black/30" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="h-8 w-24 rounded bg-white/10 backdrop-blur-md" />
+                    </div>
+                    <div className="absolute top-2 right-2 rounded bg-black/60 px-2 py-1 text-[10px] font-bold text-zinc-300 backdrop-blur-md">12:04</div>
+                    <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full border border-white/30 bg-white/20 backdrop-blur-md">
+                        <span className="text-white text-xl">▶</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="h-2 w-full rounded-full bg-gray-200 dark:bg-gray-800">
-                    <div
-                      className="h-2 rounded-full bg-green-600 transition-all"
-                      style={{ width: `${Math.min(100, Math.max(0, uploadProgress))}%` }}
-                    />
+                  <div className="p-base">
+                    <p className="truncate text-[14px] text-zinc-200">Project Alpha Sync - Screen Share</p>
+                    <p className="text-[11px] text-zinc-500">Recorded 2h ago</p>
                   </div>
                 </div>
-              )}
+
+                <div className="glass-panel group cursor-pointer overflow-hidden rounded-xl">
+                  <div className="relative aspect-video overflow-hidden bg-surface-container-high">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#2b4d7a_0%,#262626_45%,#181818_100%)] opacity-90" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="h-8 w-24 rounded bg-white/10 backdrop-blur-md" />
+                    </div>
+                    <div className="absolute top-2 right-2 rounded bg-black/60 px-2 py-1 text-[10px] font-bold text-zinc-300 backdrop-blur-md">05:22</div>
+                    <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full border border-white/30 bg-white/20 backdrop-blur-md">
+                        <span className="text-white text-xl">▶</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-base">
+                    <p className="truncate text-[14px] text-zinc-200">Quick Feedback - UI Review</p>
+                    <p className="text-[11px] text-zinc-500">Recorded 5h ago</p>
+                  </div>
+                </div>
+
+                <div className="glass-panel flex cursor-pointer flex-col items-center justify-center rounded-xl border-dashed border-white/10 bg-transparent transition-all hover:bg-white/5">
+                  <LayoutGrid className="mb-sm h-10 w-10 text-zinc-600" aria-hidden="true" />
+                  <span className="text-[12px] font-semibold uppercase tracking-[0.08em] text-zinc-500">New Folder</span>
+                </div>
+              </div>
             </div>
+
+            {mode && recordedChunks.length === 0 && (
+              <div className="col-span-12 mt-lg">
+                <div className="glass-panel rounded-xl p-lg">
+                  <p className="mb-6 text-zinc-400">
+                    Mode: <span className="font-semibold text-zinc-100">{mode === "screen" ? "Screen" : "Camera"}</span>
+                  </p>
+
+                  {mode === "camera" && (
+                    <video ref={videoPreviewRef} autoPlay muted playsInline className="mb-6 max-h-96 w-full rounded-lg bg-black object-cover" />
+                  )}
+
+                  <div className="flex flex-col gap-4 md:flex-row">
+                    {isRecording ? (
+                      <>
+                        <button onClick={stopRecording} className="flex-1 rounded-lg bg-red-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-red-700">
+                          <Square className="mr-2 inline-block h-4 w-4 fill-current" aria-hidden="true" />
+                          Stop Recording
+                        </button>
+                        <div className="flex items-center gap-2 rounded-lg bg-red-100 px-4 py-3 font-semibold text-red-700 dark:bg-red-900 dark:text-red-200">
+                          <span className="inline-block h-3 w-3 animate-pulse rounded-full bg-red-500" />
+                          Recording...
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <button onClick={startRecording} className="flex-1 rounded-lg bg-primary-container px-4 py-3 font-semibold text-on-primary-container transition-colors hover:brightness-110">
+                          <Circle className="mr-2 inline-block h-4 w-4 fill-current" aria-hidden="true" />
+                          Start Recording
+                        </button>
+                        <button onClick={() => setMode(null)} className="rounded-lg bg-white/10 px-6 py-3 font-semibold text-white transition-colors hover:bg-white/15">
+                          Change Mode
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {recordedChunks.length > 0 && (
+              <div className="col-span-12 mt-lg">
+                <div className="glass-panel rounded-xl p-lg">
+                  <h2 className="mb-4 text-[24px] font-medium leading-[1.3] text-on-surface">Preview</h2>
+                  <video ref={videoPreviewRef} controls className="mb-6 max-h-96 w-full rounded-lg bg-black object-cover" />
+
+                  <div className="flex flex-col gap-4 md:flex-row">
+                    <button onClick={generateLink} disabled={isUploading} className="flex-1 rounded-lg bg-emerald-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50">
+                      {isUploading ? (
+                        <>
+                          <Upload className="mr-2 inline-block h-4 w-4 animate-pulse" aria-hidden="true" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Link2 className="mr-2 inline-block h-4 w-4" aria-hidden="true" />
+                          Generate Link
+                        </>
+                      )}
+                    </button>
+                    <button onClick={resetRecording} disabled={isUploading} className="rounded-lg bg-white/10 px-6 py-3 font-semibold text-white transition-colors hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50">
+                      Try Again
+                    </button>
+                  </div>
+
+                  {isUploading && (
+                    <div className="mt-4">
+                      <div className="mb-1 flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
+                        <span>Upload progress</span>
+                        <span>{Math.round(uploadProgress)}%</span>
+                      </div>
+                      <div className="h-2 w-full rounded-full bg-gray-200 dark:bg-gray-800">
+                        <div
+                          className="h-2 rounded-full bg-emerald-600 transition-all"
+                          style={{ width: `${Math.min(100, Math.max(0, uploadProgress))}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+
+        <footer className="mt-auto flex w-full justify-between border-t border-white/5 px-8 py-4 text-[12px] font-['Space_Grotesk']">
+          <div className="text-zinc-600">© 2024 Xyro Technologies</div>
+          <div className="flex gap-6">
+            <a className="text-zinc-600 opacity-80 transition-all hover:text-cyan-300 hover:opacity-100" href="#">
+              Privacy
+            </a>
+            <a className="text-zinc-600 opacity-80 transition-all hover:text-cyan-300 hover:opacity-100" href="#">
+              Terms
+            </a>
+            <a className="text-zinc-600 opacity-80 transition-all hover:text-cyan-300 hover:opacity-100" href="#">
+              API Docs
+            </a>
+          </div>
+        </footer>
+      </main>
     </div>
   );
 }
